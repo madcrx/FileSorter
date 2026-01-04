@@ -18,6 +18,13 @@ A Windows desktop application that automatically organizes media files (TV shows
 - **Safe Merging**: Preview merges before executing, with confirmation dialogs
 - **Duplicate Protection**: Won't overwrite existing files during merge
 
+### File Renaming
+- **Clean File Names**: Automatically cleans up messy file names in all subdirectories
+- **Removes Clutter**: Removes years, extra punctuation, and text after episode numbers
+- **Consistent Format**: Creates clean names like "Show Name S01E01.mkv"
+- **Bulk Processing**: Processes all files in all folders at once
+- **Safe Renaming**: Preview changes before executing, skips files that already exist
+
 ### General
 - **User-Friendly Interface**: Clean, modern WPF interface with activity logging
 - **Safe Operations**: Confirmation dialogs and duplicate file handling
@@ -163,6 +170,28 @@ After organizing files, you may end up with similar folders that should be merge
    - All files are preserved in the target folder
    - Empty source folders are removed
 
+### Cleaning File Names
+
+After organizing and merging, you can clean up file names to remove clutter:
+
+1. **Select Directory**: Use the same directory selection
+
+2. **Preview Cleaning** (Recommended):
+   - Click "Preview Cleaning" to see how files will be renamed
+   - Review the before/after file names
+   - Check all folders to ensure names look correct
+
+3. **Clean File Names**:
+   - Click "Clean File Names"
+   - Review the confirmation dialog
+   - Confirm to proceed with renaming
+   - Watch the activity log as files are renamed
+
+4. **Review Results**:
+   - Files now have clean, simple names
+   - Format: "Show Name S01E01.ext"
+   - All clutter (years, extra text, punctuation) removed
+
 ## How It Works
 
 ### File Organization
@@ -203,6 +232,32 @@ After organizing files, you may end up with similar folders that should be merge
 | `The Office`<br>`The.Office` | `The Office` | Similar base names |
 | `Breaking Bad`<br>`Breaking.Bad.2023` | `Breaking.Bad.2023` | Year preference |
 
+### File Renaming
+
+1. **Scans All Folders**: The app looks through all subdirectories in the selected directory
+
+2. **Pattern Detection**: Finds files with season/episode patterns (S01E01, s01e01, etc.)
+
+3. **Name Cleaning**:
+   - Removes 4-digit years (1900-2099)
+   - Converts dots, dashes, underscores to spaces
+   - Removes all text after the episode number
+   - Removes multiple spaces
+   - Trims whitespace
+
+4. **Fallback Handling**: If the cleaned name is too short or empty, uses the folder name
+
+5. **Clean Format**: Creates files in format: "Show Name S01E01.ext"
+
+### File Renaming Examples
+
+| Before | After |
+|--------|-------|
+| `Show.Name.2025.S01E01.WEB.x264.mkv` | `Show Name S01E01.mkv` |
+| `The.Office.s03e12.HDTV.XviD-LOL.avi` | `The Office s03e12.avi` |
+| `Breaking_Bad_2008_S05E16_720p.mp4` | `Breaking Bad S05E16.mp4` |
+| `Game.of.Thrones.S08E06.1080p.AMZN.WEB-DL.mkv` | `Game of Thrones S08E06.mkv` |
+
 ## Interface Guide
 
 ### File Organization Section
@@ -213,6 +268,10 @@ After organizing files, you may end up with similar folders that should be merge
 ### Folder Merging Section
 - **Merge Similar Folders**: Execute folder merging (shows confirmation dialog)
 - **Preview Merges**: See what folders will be merged without making changes
+
+### File Renaming Section
+- **Clean File Names**: Execute file name cleaning (shows confirmation dialog)
+- **Preview Cleaning**: See how files will be renamed without making changes
 
 ### General
 - **Clear Log**: Clear the activity log
@@ -289,13 +348,53 @@ After organizing files, you may end up with similar folders that should be merge
 6. Click "Organize Files" to sort your media files
 7. (Optional) Click "Preview Merges" to check for similar folders
 8. (Optional) Click "Merge Similar Folders" to combine duplicate folders
-9. Done! Your files are now organized in folders
+9. (Optional) Click "Preview Cleaning" to see file name changes
+10. (Optional) Click "Clean File Names" to remove clutter from file names
+11. Done! Your files are now perfectly organized
 
 ### Typical Workflow
 
-1. **First Time**: Organize files into folders based on show names
-2. **Second Step**: Merge any similar folders that were created (e.g., "Show Name" and "Show Name 2023")
-3. **Result**: Clean, organized directory with no duplicate folders
+1. **Step 1 - Organize**: Organize files into folders based on show names
+2. **Step 2 - Merge**: Merge any similar folders that were created (e.g., "Show Name" and "Show Name 2023")
+3. **Step 3 - Clean**: Clean file names to remove years, extra text, and punctuation
+4. **Result**: Clean, organized directory with consistent file names and no duplicate folders
+
+### Example Complete Workflow
+
+**Before:**
+```
+Downloads/
+├── Show.Name.2025.S01E01.WEB.x264.mkv
+├── Show.Name.2025.S01E02.720p.HDTV.mkv
+├── Show-Name-S01E03-1080p.mkv
+```
+
+**After Step 1 (Organize):**
+```
+Downloads/
+├── Show Name/
+│   ├── Show.Name.2025.S01E01.WEB.x264.mkv
+│   ├── Show.Name.2025.S01E02.720p.HDTV.mkv
+│   └── Show-Name-S01E03-1080p.mkv
+```
+
+**After Step 2 (Merge):**
+```
+Downloads/
+├── Show Name/
+│   ├── Show.Name.2025.S01E01.WEB.x264.mkv
+│   ├── Show.Name.2025.S01E02.720p.HDTV.mkv
+│   └── Show-Name-S01E03-1080p.mkv
+```
+
+**After Step 3 (Clean):**
+```
+Downloads/
+├── Show Name/
+│   ├── Show Name S01E01.mkv
+│   ├── Show Name S01E02.mkv
+│   └── Show Name S01E03.mkv
+```
 
 ## License
 

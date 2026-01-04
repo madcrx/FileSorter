@@ -324,6 +324,123 @@ namespace FileSorter
             }
         }
 
+        private void PreviewCleanButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMessage("\n=== PREVIEW FILE NAME CLEANING ===");
+            LogMessage("Scanning files in subdirectories...\n");
+
+            try
+            {
+                var renameOperations = AnalyzeFilesForCleaning(DirectoryTextBox.Text);
+
+                if (renameOperations.Count == 0)
+                {
+                    LogMessage("No files found that need cleaning.");
+                    StatusTextBlock.Text = "No files to clean";
+                    return;
+                }
+
+                LogMessage($"Found {renameOperations.Count} file(s) to clean:\n");
+
+                foreach (var rename in renameOperations)
+                {
+                    LogMessage($"[RENAME] {rename.Folder}");
+                    LogMessage($"  FROM: {rename.OldFileName}");
+                    LogMessage($"  TO:   {rename.NewFileName}\n");
+                }
+
+                StatusTextBlock.Text = $"Preview: {renameOperations.Count} files ready to clean";
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private void CleanFileNamesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            var renameOperations = AnalyzeFilesForCleaning(DirectoryTextBox.Text);
+
+            if (renameOperations.Count == 0)
+            {
+                MessageBox.Show("No files found that need cleaning.", "Nothing to Clean",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"This will rename {renameOperations.Count} file(s) to clean format.\n\n" +
+                "File names will be simplified (remove extra text, years, punctuation). Continue?",
+                "Confirm File Renaming",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            LogMessage("\n=== CLEANING FILE NAMES ===");
+            LogMessage("Starting file rename operation...\n");
+
+            try
+            {
+                int successCount = 0;
+                int errorCount = 0;
+
+                foreach (var rename in renameOperations)
+                {
+                    try
+                    {
+                        string oldPath = Path.Combine(rename.FolderPath, rename.OldFileName);
+                        string newPath = Path.Combine(rename.FolderPath, rename.NewFileName);
+
+                        // Check if target file already exists
+                        if (File.Exists(newPath))
+                        {
+                            LogMessage($"[SKIP] {rename.Folder}/{rename.OldFileName}");
+                            LogMessage($"  Target file already exists: {rename.NewFileName}\n");
+                            continue;
+                        }
+
+                        File.Move(oldPath, newPath);
+                        LogMessage($"[RENAMED] {rename.Folder}");
+                        LogMessage($"  {rename.OldFileName} → {rename.NewFileName}\n");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMessage($"[ERROR] Failed to rename {rename.OldFileName}: {ex.Message}\n");
+                        errorCount++;
+                    }
+                }
+
+                LogMessage($"=== COMPLETE ===");
+                LogMessage($"Successfully renamed: {successCount} file(s)");
+                if (errorCount > 0)
+                    LogMessage($"Errors: {errorCount} file(s)");
+
+                StatusTextBlock.Text = $"Cleaned {successCount} files" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"File cleaning complete!\n\nSuccessfully renamed: {successCount} files\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during file cleaning";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private bool ValidateDirectory()
         {
             if (string.IsNullOrWhiteSpace(DirectoryTextBox.Text))
@@ -553,6 +670,86 @@ namespace FileSorter
             return d[s1.Length, s2.Length];
         }
 
+        private List<FileRename> AnalyzeFilesForCleaning(string directoryPath)
+        {
+            var renameOperations = new List<FileRename>();
+
+            // Get all subdirectories
+            var folders = Directory.GetDirectories(directoryPath);
+
+            foreach (var folder in folders)
+            {
+                string folderName = Path.GetFileName(folder);
+                var files = Directory.GetFiles(folder);
+
+                foreach (var file in files)
+                {
+                    string fileName = Path.GetFileName(file);
+                    string cleanedName = CleanFileName(fileName, folderName);
+
+                    // Only add if the name changed
+                    if (cleanedName != fileName)
+                    {
+                        renameOperations.Add(new FileRename
+                        {
+                            Folder = folderName,
+                            FolderPath = folder,
+                            OldFileName = fileName,
+                            NewFileName = cleanedName
+                        });
+                    }
+                }
+            }
+
+            return renameOperations;
+        }
+
+        private string CleanFileName(string fileName, string folderName)
+        {
+            // Get file extension
+            string extension = Path.GetExtension(fileName);
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+
+            // Pattern to match season and episode: S01E01, s01e01, etc.
+            var seasonEpisodePattern = @"(S\d{1,2}E\d{1,2})";
+            var match = Regex.Match(nameWithoutExtension, seasonEpisodePattern, RegexOptions.IgnoreCase);
+
+            if (!match.Success)
+            {
+                // No season/episode found, return original
+                return fileName;
+            }
+
+            string seasonEpisode = match.Value;
+
+            // Extract show name (everything before the season/episode)
+            string beforeSeasonEpisode = nameWithoutExtension.Substring(0, match.Index);
+
+            // Clean the show name:
+            // 1. Remove years (4-digit numbers)
+            beforeSeasonEpisode = Regex.Replace(beforeSeasonEpisode, @"\b(19|20)\d{2}\b", "");
+
+            // 2. Replace dots, dashes, underscores with spaces
+            beforeSeasonEpisode = Regex.Replace(beforeSeasonEpisode, @"[._-]", " ");
+
+            // 3. Remove multiple spaces
+            beforeSeasonEpisode = Regex.Replace(beforeSeasonEpisode, @"\s+", " ");
+
+            // 4. Trim
+            beforeSeasonEpisode = beforeSeasonEpisode.Trim();
+
+            // If the cleaned name is empty or very short, use the folder name
+            if (string.IsNullOrWhiteSpace(beforeSeasonEpisode) || beforeSeasonEpisode.Length < 2)
+            {
+                beforeSeasonEpisode = folderName;
+            }
+
+            // Build the clean file name: "Show Name S01E01.ext"
+            string cleanName = $"{beforeSeasonEpisode} {seasonEpisode}{extension}";
+
+            return cleanName;
+        }
+
         private class FileOperation
         {
             public string SourcePath { get; set; } = string.Empty;
@@ -569,6 +766,14 @@ namespace FileSorter
             public string TargetFolderPath { get; set; } = string.Empty;
             public string Reason { get; set; } = string.Empty;
             public int FileCount { get; set; }
+        }
+
+        private class FileRename
+        {
+            public string Folder { get; set; } = string.Empty;
+            public string FolderPath { get; set; } = string.Empty;
+            public string OldFileName { get; set; } = string.Empty;
+            public string NewFileName { get; set; } = string.Empty;
         }
     }
 }
