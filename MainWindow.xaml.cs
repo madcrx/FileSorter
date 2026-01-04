@@ -157,7 +157,125 @@ namespace FileSorter
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             LogTextBlock.Text = string.Empty;
+            MovieLogTextBlock.Text = string.Empty;
             StatusTextBlock.Text = "Ready";
+        }
+
+        private void PreviewMovieCleanButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMovieMessage("\n=== PREVIEW MOVIE FILE CLEANING ===");
+            LogMovieMessage("Scanning directory for movie files...\n");
+
+            try
+            {
+                var renameOperations = AnalyzeMoviesForCleaning(DirectoryTextBox.Text);
+
+                if (renameOperations.Count == 0)
+                {
+                    LogMovieMessage("No movie files found that need cleaning.");
+                    StatusTextBlock.Text = "No movie files to clean";
+                    return;
+                }
+
+                LogMovieMessage($"Found {renameOperations.Count} movie file(s) to clean:\n");
+
+                foreach (var rename in renameOperations)
+                {
+                    LogMovieMessage($"[RENAME]");
+                    LogMovieMessage($"  FROM: {rename.OldFileName}");
+                    LogMovieMessage($"  TO:   {rename.NewFileName}\n");
+                }
+
+                StatusTextBlock.Text = $"Preview: {renameOperations.Count} movie files ready to clean";
+            }
+            catch (Exception ex)
+            {
+                LogMovieMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private void CleanMoviesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            var renameOperations = AnalyzeMoviesForCleaning(DirectoryTextBox.Text);
+
+            if (renameOperations.Count == 0)
+            {
+                MessageBox.Show("No movie files found that need cleaning.", "Nothing to Clean",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"This will rename {renameOperations.Count} movie file(s) to clean format.\n\n" +
+                "File names will be simplified (e.g., 'Movie.2021.1080p.WEB.mkv' → 'Movie 2021.mkv'). Continue?",
+                "Confirm Movie File Renaming",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            LogMovieMessage("\n=== CLEANING MOVIE FILES ===");
+            LogMovieMessage("Starting movie file rename operation...\n");
+
+            try
+            {
+                int successCount = 0;
+                int errorCount = 0;
+
+                foreach (var rename in renameOperations)
+                {
+                    try
+                    {
+                        string oldPath = Path.Combine(rename.FolderPath, rename.OldFileName);
+                        string newPath = Path.Combine(rename.FolderPath, rename.NewFileName);
+
+                        // Check if target file already exists
+                        if (File.Exists(newPath))
+                        {
+                            LogMovieMessage($"[SKIP] {rename.OldFileName}");
+                            LogMovieMessage($"  Target file already exists: {rename.NewFileName}\n");
+                            continue;
+                        }
+
+                        File.Move(oldPath, newPath);
+                        LogMovieMessage($"[RENAMED]");
+                        LogMovieMessage($"  {rename.OldFileName} → {rename.NewFileName}\n");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMovieMessage($"[ERROR] Failed to rename {rename.OldFileName}: {ex.Message}\n");
+                        errorCount++;
+                    }
+                }
+
+                LogMovieMessage($"=== COMPLETE ===");
+                LogMovieMessage($"Successfully renamed: {successCount} file(s)");
+                if (errorCount > 0)
+                    LogMovieMessage($"Errors: {errorCount} file(s)");
+
+                StatusTextBlock.Text = $"Cleaned {successCount} movie files" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"Movie file cleaning complete!\n\nSuccessfully renamed: {successCount} files\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMovieMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during movie file cleaning";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void PreviewMergeButton_Click(object sender, RoutedEventArgs e)
@@ -647,6 +765,17 @@ namespace FileSorter
             }
         }
 
+        private void LogMovieMessage(string message)
+        {
+            MovieLogTextBlock.Text += message + "\n";
+
+            // Auto-scroll to bottom
+            if (MovieLogTextBlock.Parent is ScrollViewer scrollViewer)
+            {
+                scrollViewer.ScrollToBottom();
+            }
+        }
+
         private List<FolderMerge> FindSimilarFolders(string directoryPath)
         {
             var mergeOperations = new List<FolderMerge>();
@@ -960,6 +1089,79 @@ namespace FileSorter
             }
         }
 
+        private List<MovieRename> AnalyzeMoviesForCleaning(string directoryPath)
+        {
+            var renameOperations = new List<MovieRename>();
+
+            // Get all files in the directory
+            var files = Directory.GetFiles(directoryPath);
+
+            foreach (var file in files)
+            {
+                string fileName = Path.GetFileName(file);
+                string cleanedName = CleanMovieFileName(fileName);
+
+                // Only add if the name changed
+                if (cleanedName != fileName)
+                {
+                    renameOperations.Add(new MovieRename
+                    {
+                        FolderPath = directoryPath,
+                        OldFileName = fileName,
+                        NewFileName = cleanedName
+                    });
+                }
+            }
+
+            return renameOperations;
+        }
+
+        private string CleanMovieFileName(string fileName)
+        {
+            // Get file extension
+            string extension = Path.GetExtension(fileName);
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+
+            // Look for a 4-digit year (1900-2099)
+            var yearPattern = @"\b(19|20)\d{2}\b";
+            var yearMatch = Regex.Match(nameWithoutExtension, yearPattern);
+
+            if (!yearMatch.Success)
+            {
+                // No year found, just clean up basic punctuation
+                string cleaned = Regex.Replace(nameWithoutExtension, @"[._-]", " ");
+                cleaned = Regex.Replace(cleaned, @"\s+", " ");
+                cleaned = cleaned.Trim();
+                return $"{cleaned}{extension}";
+            }
+
+            string year = yearMatch.Value;
+
+            // Extract everything before the year
+            string beforeYear = nameWithoutExtension.Substring(0, yearMatch.Index);
+
+            // Clean the movie title:
+            // 1. Replace dots, dashes, underscores with spaces
+            beforeYear = Regex.Replace(beforeYear, @"[._-]", " ");
+
+            // 2. Remove multiple spaces
+            beforeYear = Regex.Replace(beforeYear, @"\s+", " ");
+
+            // 3. Trim
+            beforeYear = beforeYear.Trim();
+
+            // If the cleaned name is empty or very short, return original
+            if (string.IsNullOrWhiteSpace(beforeYear) || beforeYear.Length < 2)
+            {
+                return fileName;
+            }
+
+            // Build the clean file name: "Movie Title YEAR.ext"
+            string cleanName = $"{beforeYear} {year}{extension}";
+
+            return cleanName;
+        }
+
         private class FileOperation
         {
             public string SourcePath { get; set; } = string.Empty;
@@ -994,6 +1196,13 @@ namespace FileSorter
             public int SeasonNumber { get; set; }
             public string SeasonFolder { get; set; } = string.Empty;
             public string SeasonFolderPath { get; set; } = string.Empty;
+        }
+
+        private class MovieRename
+        {
+            public string FolderPath { get; set; } = string.Empty;
+            public string OldFileName { get; set; } = string.Empty;
+            public string NewFileName { get; set; } = string.Empty;
         }
     }
 }
