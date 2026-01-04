@@ -441,6 +441,145 @@ namespace FileSorter
             }
         }
 
+        private void PreviewSeasonsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMessage("\n=== PREVIEW SEASON ORGANIZATION ===");
+            LogMessage("Scanning files for season organization...\n");
+
+            try
+            {
+                var seasonOperations = AnalyzeFilesForSeasons(DirectoryTextBox.Text);
+
+                if (seasonOperations.Count == 0)
+                {
+                    LogMessage("No files found that need season organization.");
+                    StatusTextBlock.Text = "No files to organize into seasons";
+                    return;
+                }
+
+                LogMessage($"Found {seasonOperations.Count} file(s) to organize into seasons:\n");
+
+                var groupedByFolder = seasonOperations.GroupBy(s => s.ShowFolder);
+                foreach (var group in groupedByFolder)
+                {
+                    LogMessage($"[FOLDER] {group.Key}");
+                    foreach (var season in group)
+                    {
+                        string folderStatus = Directory.Exists(season.SeasonFolderPath) ? "[EXISTS]" : "[WILL CREATE]";
+                        LogMessage($"  {folderStatus} {season.FileName} → {season.SeasonFolder}");
+                    }
+                    LogMessage("");
+                }
+
+                StatusTextBlock.Text = $"Preview: {seasonOperations.Count} files ready to organize into seasons";
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private void OrganizeSeasonsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            var seasonOperations = AnalyzeFilesForSeasons(DirectoryTextBox.Text);
+
+            if (seasonOperations.Count == 0)
+            {
+                MessageBox.Show("No files found to organize into seasons.", "Nothing to Organize",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"This will organize {seasonOperations.Count} file(s) into season folders.\n\n" +
+                "Season folders will be created if needed, and leading zeros will be removed. Continue?",
+                "Confirm Season Organization",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            LogMessage("\n=== ORGANIZING INTO SEASONS ===");
+            LogMessage("Starting season organization...\n");
+
+            try
+            {
+                // First, rename any existing season folders with leading zeros
+                RenameSeasonFoldersWithLeadingZeros(DirectoryTextBox.Text);
+
+                int successCount = 0;
+                int errorCount = 0;
+
+                var groupedByFolder = seasonOperations.GroupBy(s => s.ShowFolder);
+                foreach (var group in groupedByFolder)
+                {
+                    LogMessage($"[PROCESSING] {group.Key}");
+
+                    foreach (var season in group)
+                    {
+                        try
+                        {
+                            // Create season folder if it doesn't exist
+                            if (!Directory.Exists(season.SeasonFolderPath))
+                            {
+                                Directory.CreateDirectory(season.SeasonFolderPath);
+                                LogMessage($"  [CREATED] {season.SeasonFolder}");
+                            }
+
+                            // Move file to season folder
+                            string sourceFile = Path.Combine(season.ShowFolderPath, season.FileName);
+                            string destFile = Path.Combine(season.SeasonFolderPath, season.FileName);
+
+                            // Check if file already exists
+                            if (File.Exists(destFile))
+                            {
+                                LogMessage($"  [SKIP] {season.FileName} (already exists in {season.SeasonFolder})");
+                                continue;
+                            }
+
+                            File.Move(sourceFile, destFile);
+                            LogMessage($"  [MOVED] {season.FileName} → {season.SeasonFolder}");
+                            successCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            LogMessage($"  [ERROR] Failed to move {season.FileName}: {ex.Message}");
+                            errorCount++;
+                        }
+                    }
+
+                    LogMessage("");
+                }
+
+                LogMessage($"=== COMPLETE ===");
+                LogMessage($"Successfully organized: {successCount} file(s)");
+                if (errorCount > 0)
+                    LogMessage($"Errors: {errorCount} file(s)");
+
+                StatusTextBlock.Text = $"Organized {successCount} files into seasons" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"Season organization complete!\n\nSuccessfully organized: {successCount} files\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during season organization";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         private bool ValidateDirectory()
         {
             if (string.IsNullOrWhiteSpace(DirectoryTextBox.Text))
@@ -750,6 +889,77 @@ namespace FileSorter
             return cleanName;
         }
 
+        private List<SeasonOperation> AnalyzeFilesForSeasons(string directoryPath)
+        {
+            var seasonOperations = new List<SeasonOperation>();
+
+            // Get all subdirectories (show folders)
+            var showFolders = Directory.GetDirectories(directoryPath);
+
+            foreach (var showFolder in showFolders)
+            {
+                string showFolderName = Path.GetFileName(showFolder);
+                var files = Directory.GetFiles(showFolder);
+
+                foreach (var file in files)
+                {
+                    string fileName = Path.GetFileName(file);
+
+                    // Extract season number from file name
+                    var seasonMatch = Regex.Match(fileName, @"S(\d{1,2})", RegexOptions.IgnoreCase);
+                    if (seasonMatch.Success)
+                    {
+                        int seasonNumber = int.Parse(seasonMatch.Groups[1].Value);
+                        string seasonFolderName = $"Season {seasonNumber}";
+                        string seasonFolderPath = Path.Combine(showFolder, seasonFolderName);
+
+                        seasonOperations.Add(new SeasonOperation
+                        {
+                            ShowFolder = showFolderName,
+                            ShowFolderPath = showFolder,
+                            FileName = fileName,
+                            SeasonNumber = seasonNumber,
+                            SeasonFolder = seasonFolderName,
+                            SeasonFolderPath = seasonFolderPath
+                        });
+                    }
+                }
+            }
+
+            return seasonOperations;
+        }
+
+        private void RenameSeasonFoldersWithLeadingZeros(string directoryPath)
+        {
+            var showFolders = Directory.GetDirectories(directoryPath);
+
+            foreach (var showFolder in showFolders)
+            {
+                var seasonFolders = Directory.GetDirectories(showFolder);
+
+                foreach (var seasonFolder in seasonFolders)
+                {
+                    string folderName = Path.GetFileName(seasonFolder);
+
+                    // Match "Season 01", "Season 02", etc. (with leading zero)
+                    var match = Regex.Match(folderName, @"^Season\s+0(\d+)$", RegexOptions.IgnoreCase);
+                    if (match.Success)
+                    {
+                        int seasonNumber = int.Parse(match.Groups[1].Value);
+                        string newFolderName = $"Season {seasonNumber}";
+                        string newFolderPath = Path.Combine(showFolder, newFolderName);
+
+                        // Only rename if the target doesn't already exist
+                        if (!Directory.Exists(newFolderPath))
+                        {
+                            Directory.Move(seasonFolder, newFolderPath);
+                            LogMessage($"[RENAMED] {folderName} → {newFolderName}");
+                        }
+                    }
+                }
+            }
+        }
+
         private class FileOperation
         {
             public string SourcePath { get; set; } = string.Empty;
@@ -774,6 +984,16 @@ namespace FileSorter
             public string FolderPath { get; set; } = string.Empty;
             public string OldFileName { get; set; } = string.Empty;
             public string NewFileName { get; set; } = string.Empty;
+        }
+
+        private class SeasonOperation
+        {
+            public string ShowFolder { get; set; } = string.Empty;
+            public string ShowFolderPath { get; set; } = string.Empty;
+            public string FileName { get; set; } = string.Empty;
+            public int SeasonNumber { get; set; }
+            public string SeasonFolder { get; set; } = string.Empty;
+            public string SeasonFolderPath { get; set; } = string.Empty;
         }
     }
 }
