@@ -4,11 +4,31 @@ A Windows desktop application that automatically organizes media files (TV shows
 
 ## Features
 
+### File Organization
 - **Automatic File Organization**: Moves files matching the pattern `xxx.xxx.xxx.S0...*` into folders named `xxx xxx xxx`
 - **Smart Folder Creation**: Automatically creates folders if they don't exist
 - **Preview Mode**: Preview what changes will be made before executing them
+
+### Folder Merging
+- **Smart Folder Merging**: Automatically detects and merges similar folders
+- **Intelligent Matching**: Handles variations like:
+  - Folders with/without years (e.g., "Show Name 2023" + "Show Name")
+  - Different spacing/punctuation (e.g., "Show.Name" + "Show Name")
+  - Similar variations (e.g., "Show x x" + "Show xx")
+- **Safe Merging**: Preview merges before executing, with confirmation dialogs
+- **Duplicate Protection**: Won't overwrite existing files during merge
+
+### File Renaming
+- **Clean File Names**: Automatically cleans up messy file names in all subdirectories
+- **Removes Clutter**: Removes years, extra punctuation, and text after episode numbers
+- **Consistent Format**: Creates clean names like "Show Name S01E01.mkv"
+- **Bulk Processing**: Processes all files in all folders at once
+- **Safe Renaming**: Preview changes before executing, skips files that already exist
+
+### General
 - **User-Friendly Interface**: Clean, modern WPF interface with activity logging
 - **Safe Operations**: Confirmation dialogs and duplicate file handling
+- **Real-time Logging**: See exactly what's happening as operations proceed
 
 ## File Pattern
 
@@ -106,6 +126,8 @@ If you want to share the app with others who don't have .NET installed:
 
 ## Usage
 
+### Organizing Files
+
 1. **Launch the Application**: Run `FileSorter.exe`
 
 2. **Select Directory**:
@@ -126,7 +148,53 @@ If you want to share the app with others who don't have .NET installed:
    - Check the activity log for success/error messages
    - Files are now organized in their respective folders
 
+### Merging Similar Folders
+
+After organizing files, you may end up with similar folders that should be merged:
+
+1. **Select Directory**: Use the same directory selection
+
+2. **Preview Merges** (Recommended):
+   - Click "Preview Merges" to see what folders will be combined
+   - Review the merge suggestions and reasons
+   - Check which files will be moved
+
+3. **Merge Folders**:
+   - Click "Merge Similar Folders"
+   - Review the confirmation dialog
+   - Confirm to proceed with merging
+   - Watch the activity log as folders are merged
+
+4. **Review Results**:
+   - Similar folders are now combined
+   - All files are preserved in the target folder
+   - Empty source folders are removed
+
+### Cleaning File Names
+
+After organizing and merging, you can clean up file names to remove clutter:
+
+1. **Select Directory**: Use the same directory selection
+
+2. **Preview Cleaning** (Recommended):
+   - Click "Preview Cleaning" to see how files will be renamed
+   - Review the before/after file names
+   - Check all folders to ensure names look correct
+
+3. **Clean File Names**:
+   - Click "Clean File Names"
+   - Review the confirmation dialog
+   - Confirm to proceed with renaming
+   - Watch the activity log as files are renamed
+
+4. **Review Results**:
+   - Files now have clean, simple names
+   - Format: "Show Name S01E01.ext"
+   - All clutter (years, extra text, punctuation) removed
+
 ## How It Works
+
+### File Organization
 
 1. **Pattern Matching**: The app scans files in the selected directory looking for the pattern `xxx.xxx.xxx.S##...`
 
@@ -138,11 +206,74 @@ If you want to share the app with others who don't have .NET installed:
 
 5. **Conflict Handling**: If a file already exists at the destination, it's skipped
 
+### Folder Merging
+
+1. **Similarity Detection**: The app compares folder names using multiple algorithms:
+   - Year detection (removes years to compare base names)
+   - Normalization (handles spaces, dots, dashes)
+   - Fuzzy matching (85% similarity threshold using Levenshtein distance)
+
+2. **Target Selection**: Determines which folder should be the merge target:
+   - Prefers folders with years (more specific)
+   - Prefers longer, more complete names
+
+3. **Safe Merging**:
+   - Moves all files from source to target folder
+   - Handles subdirectories
+   - Skips duplicate files (won't overwrite)
+   - Deletes empty source folders
+
+### Folder Merging Examples
+
+| Before | After | Reason |
+|--------|-------|--------|
+| `Show Name 2023`<br>`Show Name` | `Show Name 2023` | Same name with/without year |
+| `Show.Name`<br>`Show Name` | `Show Name` | Different punctuation |
+| `The Office`<br>`The.Office` | `The Office` | Similar base names |
+| `Breaking Bad`<br>`Breaking.Bad.2023` | `Breaking.Bad.2023` | Year preference |
+
+### File Renaming
+
+1. **Scans All Folders**: The app looks through all subdirectories in the selected directory
+
+2. **Pattern Detection**: Finds files with season/episode patterns (S01E01, s01e01, etc.)
+
+3. **Name Cleaning**:
+   - Removes 4-digit years (1900-2099)
+   - Converts dots, dashes, underscores to spaces
+   - Removes all text after the episode number
+   - Removes multiple spaces
+   - Trims whitespace
+
+4. **Fallback Handling**: If the cleaned name is too short or empty, uses the folder name
+
+5. **Clean Format**: Creates files in format: "Show Name S01E01.ext"
+
+### File Renaming Examples
+
+| Before | After |
+|--------|-------|
+| `Show.Name.2025.S01E01.WEB.x264.mkv` | `Show Name S01E01.mkv` |
+| `The.Office.s03e12.HDTV.XviD-LOL.avi` | `The Office s03e12.avi` |
+| `Breaking_Bad_2008_S05E16_720p.mp4` | `Breaking Bad S05E16.mp4` |
+| `Game.of.Thrones.S08E06.1080p.AMZN.WEB-DL.mkv` | `Game of Thrones S08E06.mkv` |
+
 ## Interface Guide
 
+### File Organization Section
 - **Directory Selection**: Text box and browse button to select the target directory
 - **Organize Files**: Execute the file organization (shows confirmation dialog)
-- **Preview Changes**: See what will happen without making changes
+- **Preview Changes**: See what file moves will happen without making changes
+
+### Folder Merging Section
+- **Merge Similar Folders**: Execute folder merging (shows confirmation dialog)
+- **Preview Merges**: See what folders will be merged without making changes
+
+### File Renaming Section
+- **Clean File Names**: Execute file name cleaning (shows confirmation dialog)
+- **Preview Cleaning**: See how files will be renamed without making changes
+
+### General
 - **Clear Log**: Clear the activity log
 - **Activity Log**: Shows real-time progress and results
 - **Status Bar**: Displays current operation status
@@ -215,7 +346,55 @@ If you want to share the app with others who don't have .NET installed:
 4. Click "Browse..." and select your downloads folder
 5. Click "Preview Changes" to see what will happen
 6. Click "Organize Files" to sort your media files
-7. Done! Your files are now organized in folders
+7. (Optional) Click "Preview Merges" to check for similar folders
+8. (Optional) Click "Merge Similar Folders" to combine duplicate folders
+9. (Optional) Click "Preview Cleaning" to see file name changes
+10. (Optional) Click "Clean File Names" to remove clutter from file names
+11. Done! Your files are now perfectly organized
+
+### Typical Workflow
+
+1. **Step 1 - Organize**: Organize files into folders based on show names
+2. **Step 2 - Merge**: Merge any similar folders that were created (e.g., "Show Name" and "Show Name 2023")
+3. **Step 3 - Clean**: Clean file names to remove years, extra text, and punctuation
+4. **Result**: Clean, organized directory with consistent file names and no duplicate folders
+
+### Example Complete Workflow
+
+**Before:**
+```
+Downloads/
+├── Show.Name.2025.S01E01.WEB.x264.mkv
+├── Show.Name.2025.S01E02.720p.HDTV.mkv
+├── Show-Name-S01E03-1080p.mkv
+```
+
+**After Step 1 (Organize):**
+```
+Downloads/
+├── Show Name/
+│   ├── Show.Name.2025.S01E01.WEB.x264.mkv
+│   ├── Show.Name.2025.S01E02.720p.HDTV.mkv
+│   └── Show-Name-S01E03-1080p.mkv
+```
+
+**After Step 2 (Merge):**
+```
+Downloads/
+├── Show Name/
+│   ├── Show.Name.2025.S01E01.WEB.x264.mkv
+│   ├── Show.Name.2025.S01E02.720p.HDTV.mkv
+│   └── Show-Name-S01E03-1080p.mkv
+```
+
+**After Step 3 (Clean):**
+```
+Downloads/
+├── Show Name/
+│   ├── Show Name S01E01.mkv
+│   ├── Show Name S01E02.mkv
+│   └── Show Name S01E03.mkv
+```
 
 ## License
 
