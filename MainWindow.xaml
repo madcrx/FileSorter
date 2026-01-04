@@ -1,0 +1,111 @@
+<Window x:Class="FileSorter.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="File Sorter - Organize TV Shows" Height="600" Width="900"
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0"
+                   Text="File Organizer"
+                   FontSize="28"
+                   FontWeight="Bold"
+                   Foreground="#2C3E50"
+                   Margin="0,0,0,20"/>
+
+        <!-- Directory Selection -->
+        <GroupBox Grid.Row="1" Header="Select Directory" Padding="10" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox x:Name="DirectoryTextBox"
+                         Grid.Column="0"
+                         FontSize="14"
+                         Padding="8"
+                         VerticalContentAlignment="Center"
+                         Margin="0,0,10,0"/>
+
+                <Button x:Name="BrowseButton"
+                        Grid.Column="1"
+                        Content="Browse..."
+                        Click="BrowseButton_Click"
+                        Width="100"
+                        Height="35"
+                        FontSize="14"
+                        Background="#3498DB"
+                        Foreground="White"
+                        BorderThickness="0"
+                        Cursor="Hand"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Action Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,15">
+            <Button x:Name="OrganizeButton"
+                    Content="Organize Files"
+                    Click="OrganizeButton_Click"
+                    Width="140"
+                    Height="40"
+                    FontSize="16"
+                    FontWeight="Bold"
+                    Background="#27AE60"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Margin="0,0,10,0"/>
+
+            <Button x:Name="PreviewButton"
+                    Content="Preview Changes"
+                    Click="PreviewButton_Click"
+                    Width="140"
+                    Height="40"
+                    FontSize="16"
+                    Background="#F39C12"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    Margin="0,0,10,0"/>
+
+            <Button x:Name="ClearButton"
+                    Content="Clear Log"
+                    Click="ClearButton_Click"
+                    Width="100"
+                    Height="40"
+                    FontSize="14"
+                    Background="#95A5A6"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Cursor="Hand"/>
+        </StackPanel>
+
+        <!-- Log Output -->
+        <GroupBox Grid.Row="3" Header="Activity Log" Padding="10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="LogTextBlock"
+                           FontFamily="Consolas"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Background="White"
+                           Padding="10"/>
+            </ScrollViewer>
+        </GroupBox>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="4" Height="30" Margin="0,10,0,0">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusTextBlock" Text="Ready" FontSize="12"/>
+            </StatusBarItem>
+        </StatusBar>
+    </Grid>
+</Window>
