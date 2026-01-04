@@ -25,6 +25,14 @@ A Windows desktop application that automatically organizes media files (TV shows
 - **Bulk Processing**: Processes all files in all folders at once
 - **Safe Renaming**: Preview changes before executing, skips files that already exist
 
+### Season Folder Organization
+- **Automatic Season Folders**: Organizes files into Season folders within each show directory
+- **Smart Folder Creation**: Creates "Season 1", "Season 2", etc. folders automatically
+- **Leading Zero Removal**: Renames "Season 01" to "Season 1" for consistency
+- **Episode Detection**: Extracts season number from S01E01, S02E03, etc.
+- **Bulk Organization**: Processes all shows and all seasons at once
+- **Safe Operations**: Preview mode and duplicate detection
+
 ### General
 - **User-Friendly Interface**: Clean, modern WPF interface with activity logging
 - **Safe Operations**: Confirmation dialogs and duplicate file handling
@@ -192,6 +200,28 @@ After organizing and merging, you can clean up file names to remove clutter:
    - Format: "Show Name S01E01.ext"
    - All clutter (years, extra text, punctuation) removed
 
+### Organizing into Season Folders
+
+After cleaning file names, you can organize files into season-specific subfolders:
+
+1. **Select Directory**: Use the same directory selection
+
+2. **Preview Seasons** (Recommended):
+   - Click "Preview Seasons" to see how files will be organized
+   - Review which files go into which season folders
+   - Check if season folders will be created or renamed
+
+3. **Organize into Seasons**:
+   - Click "Organize into Seasons"
+   - Review the confirmation dialog
+   - Confirm to proceed with organization
+   - Watch the activity log as files are moved
+
+4. **Review Results**:
+   - Files are now organized in Season folders
+   - Format: "Show Name/Season 1/Show Name S01E01.mkv"
+   - Leading zeros removed from folder names (Season 01 → Season 1)
+
 ## How It Works
 
 ### File Organization
@@ -258,6 +288,45 @@ After organizing and merging, you can clean up file names to remove clutter:
 | `Breaking_Bad_2008_S05E16_720p.mp4` | `Breaking Bad S05E16.mp4` |
 | `Game.of.Thrones.S08E06.1080p.AMZN.WEB-DL.mkv` | `Game of Thrones S08E06.mkv` |
 
+### Season Folder Organization
+
+1. **Scans Show Folders**: The app looks through all subdirectories (show folders)
+
+2. **Season Detection**: Extracts season number from file names (S01, S02, S03, etc.)
+
+3. **Folder Naming**: Creates folders without leading zeros:
+   - S01E01 → "Season 1"
+   - S02E03 → "Season 2"
+   - S12E05 → "Season 12"
+
+4. **Leading Zero Removal**: Automatically renames existing folders:
+   - "Season 01" → "Season 1"
+   - "Season 02" → "Season 2"
+
+5. **File Organization**: Moves files to their corresponding season folder
+
+### Season Folder Examples
+
+**Before Organization:**
+```
+Show Name/
+├── Show Name S01E01.mkv
+├── Show Name S01E02.mkv
+├── Show Name S02E01.mkv
+├── Show Name S02E02.mkv
+```
+
+**After Organization:**
+```
+Show Name/
+├── Season 1/
+│   ├── Show Name S01E01.mkv
+│   └── Show Name S01E02.mkv
+└── Season 2/
+    ├── Show Name S02E01.mkv
+    └── Show Name S02E02.mkv
+```
+
 ## Interface Guide
 
 ### File Organization Section
@@ -272,6 +341,10 @@ After organizing and merging, you can clean up file names to remove clutter:
 ### File Renaming Section
 - **Clean File Names**: Execute file name cleaning (shows confirmation dialog)
 - **Preview Cleaning**: See how files will be renamed without making changes
+
+### Season Folder Organization Section
+- **Organize into Seasons**: Execute season folder organization (shows confirmation dialog)
+- **Preview Seasons**: See how files will be organized into season folders
 
 ### General
 - **Clear Log**: Clear the activity log
@@ -350,14 +423,17 @@ After organizing and merging, you can clean up file names to remove clutter:
 8. (Optional) Click "Merge Similar Folders" to combine duplicate folders
 9. (Optional) Click "Preview Cleaning" to see file name changes
 10. (Optional) Click "Clean File Names" to remove clutter from file names
-11. Done! Your files are now perfectly organized
+11. (Optional) Click "Preview Seasons" to see season folder organization
+12. (Optional) Click "Organize into Seasons" to sort files into season folders
+13. Done! Your files are now perfectly organized
 
 ### Typical Workflow
 
 1. **Step 1 - Organize**: Organize files into folders based on show names
 2. **Step 2 - Merge**: Merge any similar folders that were created (e.g., "Show Name" and "Show Name 2023")
 3. **Step 3 - Clean**: Clean file names to remove years, extra text, and punctuation
-4. **Result**: Clean, organized directory with consistent file names and no duplicate folders
+4. **Step 4 - Seasons**: Organize files into season folders (Season 1, Season 2, etc.)
+5. **Result**: Clean, organized directory with consistent file names, no duplicate folders, and organized seasons
 
 ### Example Complete Workflow
 
@@ -394,6 +470,16 @@ Downloads/
 │   ├── Show Name S01E01.mkv
 │   ├── Show Name S01E02.mkv
 │   └── Show Name S01E03.mkv
+```
+
+**After Step 4 (Organize into Seasons):**
+```
+Downloads/
+├── Show Name/
+│   └── Season 1/
+│       ├── Show Name S01E01.mkv
+│       ├── Show Name S01E02.mkv
+│       └── Show Name S01E03.mkv
 ```
 
 ## License
