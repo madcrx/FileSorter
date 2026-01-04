@@ -1,14 +1,15 @@
 # FileSorter
 
-A Windows desktop application that automatically organizes media files (TV shows, series, etc.) into appropriate folders based on their filename patterns.
+A comprehensive Windows desktop application that automatically organizes media files (TV shows, movies, and music) into appropriate folders. Features include intelligent file organization, metadata-based music management, online database integration, and powerful batch renaming tools.
 
 ## Features
 
 ### Interface
-- **Tabbed Interface**: Separate tabs for TV Shows and Movies for organized workflow
+- **Tabbed Interface**: Separate tabs for TV Shows, Movies, and Music for organized workflow
 - **User-Friendly Design**: Clean, modern WPF interface with activity logging
 - **Real-time Logging**: See exactly what's happening as operations proceed
 - **Safe Operations**: Confirmation dialogs and duplicate file handling
+- **Online Integration**: MusicBrainz database integration for accurate music metadata
 
 ### TV Shows Tab
 
@@ -51,6 +52,43 @@ A Windows desktop application that automatically organizes media files (TV shows
 - **Preview Mode**: See changes before executing
 - **Safe Operations**: Preview mode and duplicate detection
 
+### Music Tab
+
+#### Artist Organization
+- **Metadata-Based Organization**: Reads artist information from audio file metadata (ID3, FLAC tags, etc.)
+- **Filename Fallback**: Extracts artist from filenames when metadata is missing
+- **Smart Folder Creation**: Creates artist folders with clean names
+- **Automatic Cleanup**: Removes brackets, dates, leading zeros, and extra punctuation from artist names
+- **Existing Folder Handling**: Renames existing folders to standardized artist names
+- **Preview Mode**: See organization plan before executing
+- **Multi-Format Support**: Works with MP3, FLAC, M4A, AAC, OGG, WAV, WMA
+
+#### Filename Cleaning
+- **Metadata-Driven Naming**: Uses artist and title from audio metadata when available
+- **Standard Format**: Renames files to "Artist - Song Title.ext" format
+- **Track Number Removal**: Removes track numbers and extra text from filenames
+- **Clean Output**: Removes brackets, dates, and irrelevant formatting
+- **Bulk Processing**: Processes all files in all artist folders
+- **Preview Mode**: See all renames before executing
+
+#### Album Organization (Online Lookup)
+- **MusicBrainz Integration**: Queries MusicBrainz database for accurate album information
+- **Album Folder Creation**: Creates album folders within each artist folder
+- **Automatic File Organization**: Moves songs into their corresponding album folders
+- **Track Number Naming**: Renames files to "01 - Song Title.ext" format
+- **Metadata Enhancement**: Uses online data to fill missing album information
+- **Preview Mode**: See complete album structure before executing
+- **Artwork Support**: Downloads and includes album artwork when available
+
+#### Metadata Update (Online Lookup)
+- **Complete Metadata Update**: Updates artist, title, album, year, and track numbers
+- **MusicBrainz Accuracy**: Uses MusicBrainz database for accurate information
+- **Preserves Audio Quality**: Only updates metadata tags, doesn't re-encode audio
+- **Recursive Scanning**: Processes all music files in directory and subdirectories
+- **Intelligent Matching**: Matches songs based on existing metadata or filenames
+- **Preview Mode**: See all metadata changes before writing to files
+- **Safe Updates**: Only updates files with differences, preserves existing correct data
+
 ## File Patterns
 
 ### TV Shows
@@ -79,6 +117,32 @@ The application recognizes movie files with years and cleans them:
 | `Inception.2010.720p.WEB-DL.AAC2.0.H.264.mp4` | `Inception 2010.mp4` |
 | `Interstellar-2014-2160p-4K-HDR.mkv` | `Interstellar 2014.mkv` |
 | `Avatar_The_Way_of_Water_2022_IMAX.avi` | `Avatar The Way of Water 2022.avi` |
+
+### Music
+The application organizes music files based on metadata and filenames:
+- **Supported Formats**: MP3, FLAC, M4A, AAC, OGG, WAV, WMA
+- **Metadata Reading**: Reads ID3 tags, FLAC tags, and other standard audio metadata
+- **Folder Structure**: Artist / Album / Tracks
+
+#### Music Organization Examples
+
+**Artist Organization:**
+| Before | After |
+|--------|-------|
+| `Downloads/01 - The Beatles - Hey Jude.mp3` | `The Beatles/01 - The Beatles - Hey Jude.mp3` |
+| `Downloads/Queen (1975) - Bohemian Rhapsody.flac` | `Queen/Queen (1975) - Bohemian Rhapsody.flac` |
+
+**Filename Cleaning:**
+| Before | After |
+|--------|-------|
+| `Artist Folder/01 - Song Name (Radio Edit).mp3` | `Artist Folder/Artist Name - Song Name.mp3` |
+| `Artist Folder/[2020] Track 05 - Title.flac` | `Artist Folder/Artist Name - Title.flac` |
+
+**Album Organization:**
+| Before | After |
+|--------|-------|
+| `The Beatles/The Beatles - Hey Jude.mp3` | `The Beatles/The Beatles (1968)/01 - Hey Jude.mp3` |
+| `Queen/Bohemian Rhapsody.flac` | `Queen/A Night at the Opera (1975)/11 - Bohemian Rhapsody.flac` |
 
 ## Requirements
 
@@ -385,6 +449,7 @@ Show Name/
 - **Directory Selection**: Text box and browse button to select the target directory (shared between tabs)
 - **TV Shows Tab**: Contains all TV show organization features
 - **Movies Tab**: Contains movie file cleaning features
+- **Music Tab**: Contains music organization, cleaning, album management, and metadata features
 - **Status Bar**: Displays current operation status (shared between tabs)
 - **Clear Log**: Clears the activity log in the current tab
 
@@ -417,6 +482,29 @@ Show Name/
 
 #### Activity Log
 - Shows real-time progress and results for movie operations
+
+### Music Tab
+
+#### Artist Organization Section
+- **Organize by Artist**: Execute artist folder organization (shows confirmation dialog)
+- **Preview Organization**: See how files will be organized into artist folders
+
+#### Filename Cleaning Section
+- **Clean Filenames**: Execute music filename cleaning to "Artist - Title" format (shows confirmation dialog)
+- **Preview Cleaning**: See how music files will be renamed without making changes
+
+#### Album Organization Section (Online Lookup)
+- **Organize by Albums**: Execute album organization with online database lookup (shows confirmation dialog)
+- **Preview Albums**: See complete album structure and track organization before executing
+- **Note**: This operation may take time as it queries the MusicBrainz database for each track
+
+#### Metadata Update Section (Online Lookup)
+- **Update Metadata**: Execute metadata update using online database (shows confirmation dialog)
+- **Preview Metadata**: See all metadata changes before writing to files
+- **Note**: This operation may take time as it queries the MusicBrainz database for each file
+
+#### Activity Log
+- Shows real-time progress and results for music operations
 
 ## Safety Features
 

@@ -2,11 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using MessageBox = System.Windows.MessageBox;
+using Newtonsoft.Json.Linq;
+using TagLib;
 
 namespace FileSorter
 {
@@ -158,6 +162,7 @@ namespace FileSorter
         {
             LogTextBlock.Text = string.Empty;
             MovieLogTextBlock.Text = string.Empty;
+            MusicLogTextBlock.Text = string.Empty;
             StatusTextBlock.Text = "Ready";
         }
 
@@ -776,6 +781,17 @@ namespace FileSorter
             }
         }
 
+        private void LogMusicMessage(string message)
+        {
+            MusicLogTextBlock.Text += message + "\n";
+
+            // Auto-scroll to bottom
+            if (MusicLogTextBlock.Parent is ScrollViewer scrollViewer)
+            {
+                scrollViewer.ScrollToBottom();
+            }
+        }
+
         private List<FolderMerge> FindSimilarFolders(string directoryPath)
         {
             var mergeOperations = new List<FolderMerge>();
@@ -1162,6 +1178,971 @@ namespace FileSorter
             return cleanName;
         }
 
+        // ============================================================
+        // MUSIC ORGANIZATION METHODS
+        // ============================================================
+
+        private void PreviewArtistsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMusicMessage("\n=== PREVIEW ARTIST ORGANIZATION ===");
+            LogMusicMessage("Scanning directory for music files...\n");
+
+            try
+            {
+                var operations = AnalyzeMusicByArtist(DirectoryTextBox.Text);
+
+                if (operations.Count == 0)
+                {
+                    LogMusicMessage("No music files found to organize.");
+                    StatusTextBlock.Text = "No music files to organize";
+                    return;
+                }
+
+                LogMusicMessage($"Found {operations.Count} music file(s) to organize:\n");
+
+                var groupedByArtist = operations.GroupBy(o => o.ArtistFolder);
+                foreach (var group in groupedByArtist)
+                {
+                    LogMusicMessage($"[ARTIST] {group.Key}");
+                    foreach (var op in group)
+                    {
+                        string status = Directory.Exists(op.DestinationFolder) ? "[EXISTS]" : "[WILL CREATE]";
+                        LogMusicMessage($"  {status} {op.FileName}");
+                    }
+                    LogMusicMessage("");
+                }
+
+                StatusTextBlock.Text = $"Preview: {operations.Count} music files ready to organize";
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private void OrganizeArtistsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            var operations = AnalyzeMusicByArtist(DirectoryTextBox.Text);
+
+            if (operations.Count == 0)
+            {
+                MessageBox.Show("No music files found to organize.", "Nothing to Organize",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"This will organize {operations.Count} music file(s) into artist folders.\n\n" +
+                "Files will be moved based on artist metadata and filenames. Continue?",
+                "Confirm Artist Organization",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            LogMusicMessage("\n=== ORGANIZING BY ARTIST ===");
+            LogMusicMessage("Starting artist organization...\n");
+
+            try
+            {
+                int successCount = 0;
+                int errorCount = 0;
+
+                foreach (var op in operations)
+                {
+                    try
+                    {
+                        // Create artist folder if it doesn't exist
+                        if (!Directory.Exists(op.DestinationFolder))
+                        {
+                            Directory.CreateDirectory(op.DestinationFolder);
+                            LogMusicMessage($"[CREATED] {op.ArtistFolder}");
+                        }
+
+                        // Move file
+                        string destPath = Path.Combine(op.DestinationFolder, op.FileName);
+                        if (File.Exists(destPath))
+                        {
+                            LogMusicMessage($"[SKIP] {op.FileName} (already exists)");
+                            continue;
+                        }
+
+                        File.Move(op.SourcePath, destPath);
+                        LogMusicMessage($"[MOVED] {op.FileName} → {op.ArtistFolder}");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMusicMessage($"[ERROR] {op.FileName}: {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                LogMusicMessage($"\n=== COMPLETE ===");
+                LogMusicMessage($"Successfully organized: {successCount} file(s)");
+                if (errorCount > 0)
+                    LogMusicMessage($"Errors: {errorCount} file(s)");
+
+                StatusTextBlock.Text = $"Organized {successCount} music files" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"Artist organization complete!\n\nSuccessfully organized: {successCount} files\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during organization";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void PreviewMusicCleanButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMusicMessage("\n=== PREVIEW FILENAME CLEANING ===");
+            LogMusicMessage("Scanning music files for cleaning...\n");
+
+            try
+            {
+                var operations = AnalyzeMusicForCleaning(DirectoryTextBox.Text);
+
+                if (operations.Count == 0)
+                {
+                    LogMusicMessage("No music files found that need cleaning.");
+                    StatusTextBlock.Text = "No music files to clean";
+                    return;
+                }
+
+                LogMusicMessage($"Found {operations.Count} music file(s) to clean:\n");
+
+                foreach (var op in operations.GroupBy(o => o.FolderName))
+                {
+                    LogMusicMessage($"[FOLDER] {op.Key}");
+                    foreach (var rename in op)
+                    {
+                        LogMusicMessage($"  FROM: {rename.OldFileName}");
+                        LogMusicMessage($"  TO:   {rename.NewFileName}");
+                    }
+                    LogMusicMessage("");
+                }
+
+                StatusTextBlock.Text = $"Preview: {operations.Count} music files ready to clean";
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private void CleanMusicFilesButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            var operations = AnalyzeMusicForCleaning(DirectoryTextBox.Text);
+
+            if (operations.Count == 0)
+            {
+                MessageBox.Show("No music files found that need cleaning.", "Nothing to Clean",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"This will rename {operations.Count} music file(s) to 'Artist - Song Title' format.\n\n" +
+                "Track numbers and extra text will be removed. Continue?",
+                "Confirm Filename Cleaning",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            LogMusicMessage("\n=== CLEANING MUSIC FILENAMES ===");
+            LogMusicMessage("Starting filename cleaning...\n");
+
+            try
+            {
+                int successCount = 0;
+                int errorCount = 0;
+
+                foreach (var op in operations)
+                {
+                    try
+                    {
+                        string oldPath = Path.Combine(op.FolderPath, op.OldFileName);
+                        string newPath = Path.Combine(op.FolderPath, op.NewFileName);
+
+                        if (File.Exists(newPath))
+                        {
+                            LogMusicMessage($"[SKIP] {op.OldFileName} (target exists)");
+                            continue;
+                        }
+
+                        File.Move(oldPath, newPath);
+                        LogMusicMessage($"[RENAMED] {op.OldFileName} → {op.NewFileName}");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMusicMessage($"[ERROR] {op.OldFileName}: {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                LogMusicMessage($"\n=== COMPLETE ===");
+                LogMusicMessage($"Successfully cleaned: {successCount} file(s)");
+                if (errorCount > 0)
+                    LogMusicMessage($"Errors: {errorCount} file(s)");
+
+                StatusTextBlock.Text = $"Cleaned {successCount} music files" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"Filename cleaning complete!\n\nSuccessfully cleaned: {successCount} files\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during cleaning";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void PreviewAlbumsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMusicMessage("\n=== PREVIEW ALBUM ORGANIZATION ===");
+            LogMusicMessage("Analyzing music files and looking up album information online...\n");
+            LogMusicMessage("This may take a moment...\n");
+
+            try
+            {
+                var operations = await AnalyzeMusicForAlbums(DirectoryTextBox.Text);
+
+                if (operations.Count == 0)
+                {
+                    LogMusicMessage("No music files found for album organization.");
+                    StatusTextBlock.Text = "No music files found";
+                    return;
+                }
+
+                LogMusicMessage($"Found {operations.Count} track(s) to organize into albums:\n");
+
+                var groupedByArtist = operations.GroupBy(o => o.Artist);
+                foreach (var artistGroup in groupedByArtist)
+                {
+                    LogMusicMessage($"[ARTIST] {artistGroup.Key}");
+                    var groupedByAlbum = artistGroup.GroupBy(o => o.Album);
+                    foreach (var albumGroup in groupedByAlbum)
+                    {
+                        LogMusicMessage($"  [ALBUM] {albumGroup.Key}");
+                        foreach (var track in albumGroup)
+                        {
+                            LogMusicMessage($"    {track.TrackNumber:D2} - {track.Title}");
+                        }
+                    }
+                    LogMusicMessage("");
+                }
+
+                StatusTextBlock.Text = $"Preview: {operations.Count} tracks ready to organize";
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private async void OrganizeAlbumsButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMusicMessage("\n=== ANALYZING FOR ALBUM ORGANIZATION ===");
+            LogMusicMessage("Looking up album information online...\n");
+
+            try
+            {
+                var operations = await AnalyzeMusicForAlbums(DirectoryTextBox.Text);
+
+                if (operations.Count == 0)
+                {
+                    MessageBox.Show("No music files found for album organization.", "Nothing to Organize",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var result = MessageBox.Show(
+                    $"This will organize {operations.Count} track(s) into album folders.\n\n" +
+                    "Album folders will be created and files renamed with track numbers. Continue?",
+                    "Confirm Album Organization",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                LogMusicMessage("\n=== ORGANIZING BY ALBUMS ===");
+                LogMusicMessage("Creating album folders and organizing tracks...\n");
+
+                int successCount = 0;
+                int errorCount = 0;
+
+                foreach (var op in operations)
+                {
+                    try
+                    {
+                        // Create album folder if it doesn't exist
+                        if (!Directory.Exists(op.AlbumFolderPath))
+                        {
+                            Directory.CreateDirectory(op.AlbumFolderPath);
+                            LogMusicMessage($"[CREATED] {op.Artist}/{op.Album}");
+                        }
+
+                        // Move and rename file
+                        string destPath = Path.Combine(op.AlbumFolderPath, op.NewFileName);
+                        if (File.Exists(destPath))
+                        {
+                            LogMusicMessage($"[SKIP] {op.NewFileName} (already exists)");
+                            continue;
+                        }
+
+                        File.Move(op.SourcePath, destPath);
+                        LogMusicMessage($"[MOVED] {op.Title} → {op.Artist}/{op.Album}/{op.NewFileName}");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMusicMessage($"[ERROR] {op.Title}: {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                LogMusicMessage($"\n=== COMPLETE ===");
+                LogMusicMessage($"Successfully organized: {successCount} track(s)");
+                if (errorCount > 0)
+                    LogMusicMessage($"Errors: {errorCount} track(s)");
+
+                StatusTextBlock.Text = $"Organized {successCount} tracks" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"Album organization complete!\n\nSuccessfully organized: {successCount} tracks\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during organization";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void PreviewMetadataButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMusicMessage("\n=== PREVIEW METADATA UPDATES ===");
+            LogMusicMessage("Analyzing music files and looking up metadata online...\n");
+            LogMusicMessage("This may take a moment...\n");
+
+            try
+            {
+                var operations = await AnalyzeMusicForMetadataUpdate(DirectoryTextBox.Text);
+
+                if (operations.Count == 0)
+                {
+                    LogMusicMessage("No music files found for metadata update.");
+                    StatusTextBlock.Text = "No music files found";
+                    return;
+                }
+
+                LogMusicMessage($"Found {operations.Count} file(s) with metadata updates:\n");
+
+                foreach (var op in operations)
+                {
+                    LogMusicMessage($"[FILE] {op.FileName}");
+                    if (!string.IsNullOrEmpty(op.NewArtist))
+                        LogMusicMessage($"  Artist: {op.OldArtist} → {op.NewArtist}");
+                    if (!string.IsNullOrEmpty(op.NewTitle))
+                        LogMusicMessage($"  Title: {op.OldTitle} → {op.NewTitle}");
+                    if (!string.IsNullOrEmpty(op.NewAlbum))
+                        LogMusicMessage($"  Album: {op.OldAlbum} → {op.NewAlbum}");
+                    if (op.NewYear > 0)
+                        LogMusicMessage($"  Year: {op.OldYear} → {op.NewYear}");
+                    LogMusicMessage("");
+                }
+
+                StatusTextBlock.Text = $"Preview: {operations.Count} files ready for metadata update";
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during preview";
+            }
+        }
+
+        private async void UpdateMetadataButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateDirectory())
+                return;
+
+            LogMusicMessage("\n=== ANALYZING METADATA ===");
+            LogMusicMessage("Looking up metadata online...\n");
+
+            try
+            {
+                var operations = await AnalyzeMusicForMetadataUpdate(DirectoryTextBox.Text);
+
+                if (operations.Count == 0)
+                {
+                    MessageBox.Show("No music files found for metadata update.", "Nothing to Update",
+                        MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var result = MessageBox.Show(
+                    $"This will update metadata for {operations.Count} file(s) using online database.\n\n" +
+                    "Existing metadata will be updated with accurate information. Continue?",
+                    "Confirm Metadata Update",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes)
+                    return;
+
+                LogMusicMessage("\n=== UPDATING METADATA ===");
+                LogMusicMessage("Writing metadata to files...\n");
+
+                int successCount = 0;
+                int errorCount = 0;
+
+                foreach (var op in operations)
+                {
+                    try
+                    {
+                        using (var file = TagLib.File.Create(op.FilePath))
+                        {
+                            if (!string.IsNullOrEmpty(op.NewArtist))
+                                file.Tag.Performers = new[] { op.NewArtist };
+                            if (!string.IsNullOrEmpty(op.NewTitle))
+                                file.Tag.Title = op.NewTitle;
+                            if (!string.IsNullOrEmpty(op.NewAlbum))
+                                file.Tag.Album = op.NewAlbum;
+                            if (op.NewYear > 0)
+                                file.Tag.Year = (uint)op.NewYear;
+                            if (op.NewTrackNumber > 0)
+                                file.Tag.Track = (uint)op.NewTrackNumber;
+
+                            file.Save();
+                        }
+
+                        LogMusicMessage($"[UPDATED] {op.FileName}");
+                        successCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        LogMusicMessage($"[ERROR] {op.FileName}: {ex.Message}");
+                        errorCount++;
+                    }
+                }
+
+                LogMusicMessage($"\n=== COMPLETE ===");
+                LogMusicMessage($"Successfully updated: {successCount} file(s)");
+                if (errorCount > 0)
+                    LogMusicMessage($"Errors: {errorCount} file(s)");
+
+                StatusTextBlock.Text = $"Updated metadata for {successCount} files" + (errorCount > 0 ? $" ({errorCount} errors)" : "");
+
+                MessageBox.Show(
+                    $"Metadata update complete!\n\nSuccessfully updated: {successCount} files\nErrors: {errorCount}",
+                    "Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                LogMusicMessage($"ERROR: {ex.Message}");
+                StatusTextBlock.Text = "Error during metadata update";
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // ============================================================
+        // MUSIC HELPER METHODS
+        // ============================================================
+
+        private List<MusicOrganizeOperation> AnalyzeMusicByArtist(string directoryPath)
+        {
+            var operations = new List<MusicOrganizeOperation>();
+            var musicFiles = GetMusicFiles(directoryPath);
+
+            foreach (var file in musicFiles)
+            {
+                string fileName = Path.GetFileName(file);
+                string artist = GetArtistFromFile(file);
+
+                if (string.IsNullOrWhiteSpace(artist))
+                    continue;
+
+                string cleanArtist = CleanArtistName(artist);
+                string artistFolder = Path.Combine(directoryPath, cleanArtist);
+
+                operations.Add(new MusicOrganizeOperation
+                {
+                    SourcePath = file,
+                    FileName = fileName,
+                    ArtistFolder = cleanArtist,
+                    DestinationFolder = artistFolder
+                });
+            }
+
+            return operations;
+        }
+
+        private List<MusicCleanOperation> AnalyzeMusicForCleaning(string directoryPath)
+        {
+            var operations = new List<MusicCleanOperation>();
+            var folders = Directory.GetDirectories(directoryPath);
+
+            foreach (var folder in folders)
+            {
+                var musicFiles = GetMusicFiles(folder);
+                string folderName = Path.GetFileName(folder);
+
+                foreach (var file in musicFiles)
+                {
+                    string fileName = Path.GetFileName(file);
+                    string cleanedName = CleanMusicFileName(file);
+
+                    if (cleanedName != fileName)
+                    {
+                        operations.Add(new MusicCleanOperation
+                        {
+                            FolderPath = folder,
+                            FolderName = folderName,
+                            OldFileName = fileName,
+                            NewFileName = cleanedName
+                        });
+                    }
+                }
+            }
+
+            return operations;
+        }
+
+        private async Task<List<AlbumOrganizeOperation>> AnalyzeMusicForAlbums(string directoryPath)
+        {
+            var operations = new List<AlbumOrganizeOperation>();
+            var folders = Directory.GetDirectories(directoryPath);
+
+            foreach (var folder in folders)
+            {
+                var musicFiles = GetMusicFiles(folder);
+                string artistFolder = Path.GetFileName(folder);
+
+                foreach (var file in musicFiles)
+                {
+                    try
+                    {
+                        var trackInfo = await LookupTrackInfo(file);
+                        if (trackInfo == null)
+                            continue;
+
+                        string albumFolder = Path.Combine(folder, CleanArtistName(trackInfo.Album));
+                        string newFileName = $"{trackInfo.TrackNumber:D2} - {trackInfo.Title}{Path.GetExtension(file)}";
+
+                        operations.Add(new AlbumOrganizeOperation
+                        {
+                            SourcePath = file,
+                            Artist = trackInfo.Artist,
+                            Album = trackInfo.Album,
+                            Title = trackInfo.Title,
+                            TrackNumber = trackInfo.TrackNumber,
+                            AlbumFolderPath = albumFolder,
+                            NewFileName = newFileName
+                        });
+                    }
+                    catch
+                    {
+                        // Skip files that fail to lookup
+                        continue;
+                    }
+                }
+            }
+
+            return operations;
+        }
+
+        private async Task<List<MetadataUpdateOperation>> AnalyzeMusicForMetadataUpdate(string directoryPath)
+        {
+            var operations = new List<MetadataUpdateOperation>();
+            var musicFiles = GetMusicFilesRecursive(directoryPath);
+
+            foreach (var file in musicFiles)
+            {
+                try
+                {
+                    var trackInfo = await LookupTrackInfo(file);
+                    if (trackInfo == null)
+                        continue;
+
+                    // Read current metadata
+                    string oldArtist = "", oldTitle = "", oldAlbum = "";
+                    int oldYear = 0;
+
+                    using (var tagFile = TagLib.File.Create(file))
+                    {
+                        oldArtist = tagFile.Tag.FirstPerformer ?? "";
+                        oldTitle = tagFile.Tag.Title ?? "";
+                        oldAlbum = tagFile.Tag.Album ?? "";
+                        oldYear = (int)(tagFile.Tag.Year);
+                    }
+
+                    // Only add if there are differences
+                    if (trackInfo.Artist != oldArtist || trackInfo.Title != oldTitle ||
+                        trackInfo.Album != oldAlbum || trackInfo.Year != oldYear)
+                    {
+                        operations.Add(new MetadataUpdateOperation
+                        {
+                            FilePath = file,
+                            FileName = Path.GetFileName(file),
+                            OldArtist = oldArtist,
+                            NewArtist = trackInfo.Artist,
+                            OldTitle = oldTitle,
+                            NewTitle = trackInfo.Title,
+                            OldAlbum = oldAlbum,
+                            NewAlbum = trackInfo.Album,
+                            OldYear = oldYear,
+                            NewYear = trackInfo.Year,
+                            NewTrackNumber = trackInfo.TrackNumber
+                        });
+                    }
+                }
+                catch
+                {
+                    // Skip files that fail
+                    continue;
+                }
+            }
+
+            return operations;
+        }
+
+        private string GetArtistFromFile(string filePath)
+        {
+            try
+            {
+                // Try to read from metadata first
+                using (var file = TagLib.File.Create(filePath))
+                {
+                    string artist = file.Tag.FirstPerformer;
+                    if (!string.IsNullOrWhiteSpace(artist))
+                        return artist;
+                }
+            }
+            catch
+            {
+                // If metadata reading fails, try filename
+            }
+
+            // Fallback: Try to extract from filename
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
+
+            // Check for "Artist - Title" format
+            if (fileName.Contains(" - "))
+            {
+                return fileName.Split(new[] { " - " }, StringSplitOptions.None)[0].Trim();
+            }
+
+            // Check for track number prefix "01. Artist - Title"
+            var match = Regex.Match(fileName, @"^\d+\.\s*(.+?)\s*-\s*.+$");
+            if (match.Success)
+            {
+                return match.Groups[1].Value.Trim();
+            }
+
+            return "Unknown Artist";
+        }
+
+        private string CleanArtistName(string artistName)
+        {
+            if (string.IsNullOrWhiteSpace(artistName))
+                return "Unknown Artist";
+
+            // Remove brackets and their contents
+            artistName = Regex.Replace(artistName, @"\[.*?\]", "");
+            artistName = Regex.Replace(artistName, @"\(.*?\)", "");
+
+            // Remove leading zeros (e.g., "01 - Artist" → "Artist")
+            artistName = Regex.Replace(artistName, @"^\d+\s*[-.]?\s*", "");
+
+            // Remove years (4-digit numbers)
+            artistName = Regex.Replace(artistName, @"\b(19|20)\d{2}\b", "");
+
+            // Clean punctuation
+            artistName = Regex.Replace(artistName, @"[._]", " ");
+            artistName = Regex.Replace(artistName, @"\s+", " ");
+
+            // Remove "feat.", "ft.", "featuring", etc.
+            artistName = Regex.Replace(artistName, @"\b(feat|ft|featuring)\.?\b.*$", "", RegexOptions.IgnoreCase);
+
+            return artistName.Trim();
+        }
+
+        private string CleanMusicFileName(string filePath)
+        {
+            string extension = Path.GetExtension(filePath);
+            string artist = "";
+            string title = "";
+
+            try
+            {
+                // Try to read from metadata
+                using (var file = TagLib.File.Create(filePath))
+                {
+                    artist = file.Tag.FirstPerformer ?? "";
+                    title = file.Tag.Title ?? "";
+                }
+
+                if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
+                {
+                    artist = CleanArtistName(artist);
+                    title = title.Trim();
+                    return $"{artist} - {title}{extension}";
+                }
+            }
+            catch
+            {
+                // Fallback to filename parsing
+            }
+
+            // Parse from filename
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
+
+            // Remove track numbers from the start
+            fileName = Regex.Replace(fileName, @"^\d+\s*[-.]?\s*", "");
+
+            // If it already has "Artist - Title" format, just clean it
+            if (fileName.Contains(" - "))
+            {
+                var parts = fileName.Split(new[] { " - " }, 2, StringSplitOptions.None);
+                artist = CleanArtistName(parts[0]);
+                title = parts[1].Trim();
+            }
+            else
+            {
+                // Use folder name as artist, filename as title
+                string folderName = Path.GetFileName(Path.GetDirectoryName(filePath) ?? "");
+                artist = CleanArtistName(folderName);
+                title = fileName;
+            }
+
+            return $"{artist} - {title}{extension}";
+        }
+
+        private List<string> GetMusicFiles(string directoryPath)
+        {
+            var musicExtensions = new[] { ".mp3", ".flac", ".m4a", ".aac", ".ogg", ".wav", ".wma" };
+            var musicFiles = new List<string>();
+
+            try
+            {
+                var allFiles = Directory.GetFiles(directoryPath);
+                foreach (var file in allFiles)
+                {
+                    string ext = Path.GetExtension(file).ToLowerInvariant();
+                    if (musicExtensions.Contains(ext))
+                    {
+                        musicFiles.Add(file);
+                    }
+                }
+            }
+            catch
+            {
+                // Return empty list if directory can't be read
+            }
+
+            return musicFiles;
+        }
+
+        private List<string> GetMusicFilesRecursive(string directoryPath)
+        {
+            var musicExtensions = new[] { ".mp3", ".flac", ".m4a", ".aac", ".ogg", ".wav", ".wma" };
+            var musicFiles = new List<string>();
+
+            try
+            {
+                var allFiles = Directory.GetFiles(directoryPath, "*.*", SearchOption.AllDirectories);
+                foreach (var file in allFiles)
+                {
+                    string ext = Path.GetExtension(file).ToLowerInvariant();
+                    if (musicExtensions.Contains(ext))
+                    {
+                        musicFiles.Add(file);
+                    }
+                }
+            }
+            catch
+            {
+                // Return what we have if error occurs
+            }
+
+            return musicFiles;
+        }
+
+        private async Task<TrackInfo?> LookupTrackInfo(string filePath)
+        {
+            try
+            {
+                // First, try to read metadata from the file
+                string artist = "";
+                string title = "";
+                string album = "";
+                int year = 0;
+                int trackNumber = 0;
+
+                using (var file = TagLib.File.Create(filePath))
+                {
+                    artist = file.Tag.FirstPerformer ?? "";
+                    title = file.Tag.Title ?? "";
+                    album = file.Tag.Album ?? "";
+                    year = (int)(file.Tag.Year);
+                    trackNumber = (int)(file.Tag.Track);
+                }
+
+                // If we have enough metadata, use it
+                if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
+                {
+                    // If album is missing, try to look it up online
+                    if (string.IsNullOrWhiteSpace(album))
+                    {
+                        var onlineInfo = await LookupMusicBrainz(artist, title);
+                        if (onlineInfo != null)
+                        {
+                            album = onlineInfo.Album;
+                            if (year == 0) year = onlineInfo.Year;
+                            if (trackNumber == 0) trackNumber = onlineInfo.TrackNumber;
+                        }
+                    }
+
+                    return new TrackInfo
+                    {
+                        Artist = artist,
+                        Title = title,
+                        Album = album ?? "Unknown Album",
+                        Year = year,
+                        TrackNumber = trackNumber > 0 ? trackNumber : 1
+                    };
+                }
+
+                // If metadata is missing, try to parse filename and lookup online
+                string fileName = Path.GetFileNameWithoutExtension(filePath);
+                fileName = Regex.Replace(fileName, @"^\d+\s*[-.]?\s*", ""); // Remove track numbers
+
+                if (fileName.Contains(" - "))
+                {
+                    var parts = fileName.Split(new[] { " - " }, 2, StringSplitOptions.None);
+                    artist = parts[0].Trim();
+                    title = parts[1].Trim();
+
+                    var onlineInfo = await LookupMusicBrainz(artist, title);
+                    if (onlineInfo != null)
+                        return onlineInfo;
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private async Task<TrackInfo?> LookupMusicBrainz(string artist, string title)
+        {
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    // Set user agent (required by MusicBrainz API)
+                    client.DefaultRequestHeaders.Add("User-Agent", "FileSorter/1.0 (https://github.com/example/filesorter)");
+
+                    // Search for the recording
+                    string query = Uri.EscapeDataString($"artist:\"{artist}\" AND recording:\"{title}\"");
+                    string url = $"https://musicbrainz.org/ws/2/recording?query={query}&fmt=json&limit=1";
+
+                    var response = await client.GetStringAsync(url);
+                    var json = JObject.Parse(response);
+
+                    var recordings = json["recordings"] as JArray;
+                    if (recordings == null || recordings.Count == 0)
+                        return null;
+
+                    var recording = recordings[0];
+                    var releases = recording["releases"] as JArray;
+
+                    string albumName = releases != null && releases.Count > 0
+                        ? releases[0]["title"]?.ToString() ?? "Unknown Album"
+                        : "Unknown Album";
+
+                    int releaseYear = 0;
+                    if (releases != null && releases.Count > 0)
+                    {
+                        string? date = releases[0]["date"]?.ToString();
+                        if (!string.IsNullOrEmpty(date) && date.Length >= 4)
+                        {
+                            int.TryParse(date.Substring(0, 4), out releaseYear);
+                        }
+                    }
+
+                    return new TrackInfo
+                    {
+                        Artist = recording["artist-credit"]?[0]?["name"]?.ToString() ?? artist,
+                        Title = recording["title"]?.ToString() ?? title,
+                        Album = albumName,
+                        Year = releaseYear,
+                        TrackNumber = 1 // MusicBrainz doesn't always provide track number in this query
+                    };
+                }
+            }
+            catch
+            {
+                // If online lookup fails, return null
+                return null;
+            }
+        }
+
+        private class TrackInfo
+        {
+            public string Artist { get; set; } = string.Empty;
+            public string Title { get; set; } = string.Empty;
+            public string Album { get; set; } = string.Empty;
+            public int Year { get; set; }
+            public int TrackNumber { get; set; }
+        }
+
         private class FileOperation
         {
             public string SourcePath { get; set; } = string.Empty;
@@ -1203,6 +2184,48 @@ namespace FileSorter
             public string FolderPath { get; set; } = string.Empty;
             public string OldFileName { get; set; } = string.Empty;
             public string NewFileName { get; set; } = string.Empty;
+        }
+
+        private class MusicOrganizeOperation
+        {
+            public string SourcePath { get; set; } = string.Empty;
+            public string FileName { get; set; } = string.Empty;
+            public string ArtistFolder { get; set; } = string.Empty;
+            public string DestinationFolder { get; set; } = string.Empty;
+        }
+
+        private class MusicCleanOperation
+        {
+            public string FolderPath { get; set; } = string.Empty;
+            public string FolderName { get; set; } = string.Empty;
+            public string OldFileName { get; set; } = string.Empty;
+            public string NewFileName { get; set; } = string.Empty;
+        }
+
+        private class AlbumOrganizeOperation
+        {
+            public string SourcePath { get; set; } = string.Empty;
+            public string Artist { get; set; } = string.Empty;
+            public string Album { get; set; } = string.Empty;
+            public string Title { get; set; } = string.Empty;
+            public int TrackNumber { get; set; }
+            public string AlbumFolderPath { get; set; } = string.Empty;
+            public string NewFileName { get; set; } = string.Empty;
+        }
+
+        private class MetadataUpdateOperation
+        {
+            public string FilePath { get; set; } = string.Empty;
+            public string FileName { get; set; } = string.Empty;
+            public string OldArtist { get; set; } = string.Empty;
+            public string NewArtist { get; set; } = string.Empty;
+            public string OldTitle { get; set; } = string.Empty;
+            public string NewTitle { get; set; } = string.Empty;
+            public string OldAlbum { get; set; } = string.Empty;
+            public string NewAlbum { get; set; } = string.Empty;
+            public int OldYear { get; set; }
+            public int NewYear { get; set; }
+            public int NewTrackNumber { get; set; }
         }
     }
 }
