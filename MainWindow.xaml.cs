@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using MessageBox = System.Windows.MessageBox;
 using Newtonsoft.Json.Linq;
 using TagLib;
+using File = System.IO.File;
 
 namespace FileSorter
 {
