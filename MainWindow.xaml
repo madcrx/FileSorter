@@ -247,6 +247,151 @@
                     </GroupBox>
                 </Grid>
             </TabItem>
+
+            <!-- Music Tab -->
+            <TabItem Header="Music" FontSize="14" FontWeight="Bold">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Artist Organization Buttons -->
+                    <GroupBox Grid.Row="0" Header="Artist Organization" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="OrganizeArtistsButton"
+                                    Content="Organize by Artist"
+                                    Click="OrganizeArtistsButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#9B59B6"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+
+                            <Button x:Name="PreviewArtistsButton"
+                                    Content="Preview Organization"
+                                    Click="PreviewArtistsButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#BB76D6"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Music Filename Cleaning Buttons -->
+                    <GroupBox Grid.Row="1" Header="Filename Cleaning" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="CleanMusicFilesButton"
+                                    Content="Clean Filenames"
+                                    Click="CleanMusicFilesButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#1ABC9C"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+
+                            <Button x:Name="PreviewMusicCleanButton"
+                                    Content="Preview Cleaning"
+                                    Click="PreviewMusicCleanButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#48C9B0"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Album Organization Buttons -->
+                    <GroupBox Grid.Row="2" Header="Album Organization (Online Lookup)" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="OrganizeAlbumsButton"
+                                    Content="Organize by Albums"
+                                    Click="OrganizeAlbumsButton_Click"
+                                    Width="170"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#E67E22"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+
+                            <Button x:Name="PreviewAlbumsButton"
+                                    Content="Preview Albums"
+                                    Click="PreviewAlbumsButton_Click"
+                                    Width="150"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#F39C12"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Metadata Update Buttons -->
+                    <GroupBox Grid.Row="3" Header="Metadata Update (Online Lookup)" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="UpdateMetadataButton"
+                                    Content="Update Metadata"
+                                    Click="UpdateMetadataButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#2980B9"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+
+                            <Button x:Name="PreviewMetadataButton"
+                                    Content="Preview Metadata"
+                                    Click="PreviewMetadataButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#3498DB"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Log Output for Music -->
+                    <GroupBox Grid.Row="4" Header="Activity Log" Padding="10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="MusicLogTextBlock"
+                                       FontFamily="Consolas"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Background="White"
+                                       Padding="10"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
         </TabControl>
 
         <!-- Status Bar -->
