@@ -8,10 +8,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -53,153 +49,222 @@
             </Grid>
         </GroupBox>
 
-        <!-- File Organization Buttons -->
-        <GroupBox Grid.Row="2" Header="File Organization" Padding="10" Margin="0,0,0,15">
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="OrganizeButton"
-                        Content="Organize Files"
-                        Click="OrganizeButton_Click"
-                        Width="140"
-                        Height="40"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Background="#27AE60"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
+        <!-- Tabbed Interface -->
+        <TabControl Grid.Row="2" Margin="0,0,0,15">
+            <!-- TV Shows Tab -->
+            <TabItem Header="TV Shows" FontSize="14" FontWeight="Bold">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                <Button x:Name="PreviewButton"
-                        Content="Preview Changes"
-                        Click="PreviewButton_Click"
-                        Width="140"
-                        Height="40"
-                        FontSize="16"
-                        Background="#F39C12"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
-            </StackPanel>
-        </GroupBox>
+                    <!-- File Organization Buttons -->
+                    <GroupBox Grid.Row="0" Header="File Organization" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="OrganizeButton"
+                                    Content="Organize Files"
+                                    Click="OrganizeButton_Click"
+                                    Width="140"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#27AE60"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
 
-        <!-- Folder Merging Buttons -->
-        <GroupBox Grid.Row="3" Header="Folder Merging" Padding="10" Margin="0,0,0,15">
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="MergeFoldersButton"
-                        Content="Merge Similar Folders"
-                        Click="MergeFoldersButton_Click"
-                        Width="160"
-                        Height="40"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Background="#8E44AD"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
+                            <Button x:Name="PreviewButton"
+                                    Content="Preview Changes"
+                                    Click="PreviewButton_Click"
+                                    Width="140"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#F39C12"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
 
-                <Button x:Name="PreviewMergeButton"
-                        Content="Preview Merges"
-                        Click="PreviewMergeButton_Click"
-                        Width="140"
-                        Height="40"
-                        FontSize="16"
-                        Background="#9B59B6"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
-            </StackPanel>
-        </GroupBox>
+                    <!-- Folder Merging Buttons -->
+                    <GroupBox Grid.Row="1" Header="Folder Merging" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="MergeFoldersButton"
+                                    Content="Merge Similar Folders"
+                                    Click="MergeFoldersButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#8E44AD"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
 
-        <!-- File Renaming Buttons -->
-        <GroupBox Grid.Row="4" Header="File Renaming" Padding="10" Margin="0,0,0,15">
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="CleanFileNamesButton"
-                        Content="Clean File Names"
-                        Click="CleanFileNamesButton_Click"
-                        Width="160"
-                        Height="40"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Background="#E67E22"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
+                            <Button x:Name="PreviewMergeButton"
+                                    Content="Preview Merges"
+                                    Click="PreviewMergeButton_Click"
+                                    Width="140"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#9B59B6"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
 
-                <Button x:Name="PreviewCleanButton"
-                        Content="Preview Cleaning"
-                        Click="PreviewCleanButton_Click"
-                        Width="140"
-                        Height="40"
-                        FontSize="16"
-                        Background="#D68910"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
-            </StackPanel>
-        </GroupBox>
+                    <!-- File Renaming Buttons -->
+                    <GroupBox Grid.Row="2" Header="File Renaming" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="CleanFileNamesButton"
+                                    Content="Clean File Names"
+                                    Click="CleanFileNamesButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#E67E22"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
 
-        <!-- Season Folder Organization Buttons -->
-        <GroupBox Grid.Row="5" Header="Season Folder Organization" Padding="10" Margin="0,0,0,15">
-            <StackPanel Orientation="Horizontal">
-                <Button x:Name="OrganizeSeasonsButton"
-                        Content="Organize into Seasons"
-                        Click="OrganizeSeasonsButton_Click"
-                        Width="180"
-                        Height="40"
-                        FontSize="16"
-                        FontWeight="Bold"
-                        Background="#16A085"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
+                            <Button x:Name="PreviewCleanButton"
+                                    Content="Preview Cleaning"
+                                    Click="PreviewCleanButton_Click"
+                                    Width="140"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#D68910"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
 
-                <Button x:Name="PreviewSeasonsButton"
-                        Content="Preview Seasons"
-                        Click="PreviewSeasonsButton_Click"
-                        Width="140"
-                        Height="40"
-                        FontSize="16"
-                        Background="#1ABC9C"
-                        Foreground="White"
-                        BorderThickness="0"
-                        Cursor="Hand"
-                        Margin="0,0,10,0"/>
+                    <!-- Season Folder Organization Buttons -->
+                    <GroupBox Grid.Row="3" Header="Season Folder Organization" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="OrganizeSeasonsButton"
+                                    Content="Organize into Seasons"
+                                    Click="OrganizeSeasonsButton_Click"
+                                    Width="180"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#16A085"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
 
+                            <Button x:Name="PreviewSeasonsButton"
+                                    Content="Preview Seasons"
+                                    Click="PreviewSeasonsButton_Click"
+                                    Width="140"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#1ABC9C"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Log Output -->
+                    <GroupBox Grid.Row="4" Header="Activity Log" Padding="10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="LogTextBlock"
+                                       FontFamily="Consolas"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Background="White"
+                                       Padding="10"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- Movies Tab -->
+            <TabItem Header="Movies" FontSize="14" FontWeight="Bold">
+                <Grid Margin="10">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Movie File Cleaning Buttons -->
+                    <GroupBox Grid.Row="0" Header="Movie File Cleaning" Padding="10" Margin="0,0,0,15">
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="CleanMoviesButton"
+                                    Content="Clean Movie Files"
+                                    Click="CleanMoviesButton_Click"
+                                    Width="160"
+                                    Height="40"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Background="#C0392B"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+
+                            <Button x:Name="PreviewMovieCleanButton"
+                                    Content="Preview Cleaning"
+                                    Click="PreviewMovieCleanButton_Click"
+                                    Width="140"
+                                    Height="40"
+                                    FontSize="16"
+                                    Background="#E74C3C"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"
+                                    Margin="0,0,10,0"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Log Output for Movies -->
+                    <GroupBox Grid.Row="1" Header="Activity Log" Padding="10">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <TextBlock x:Name="MovieLogTextBlock"
+                                       FontFamily="Consolas"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Background="White"
+                                       Padding="10"/>
+                        </ScrollViewer>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- Status Bar -->
+        <StatusBar Grid.Row="3" Height="30" Margin="0,0,0,0">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusTextBlock" Text="Ready" FontSize="12"/>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
                 <Button x:Name="ClearButton"
                         Content="Clear Log"
                         Click="ClearButton_Click"
                         Width="100"
-                        Height="40"
-                        FontSize="14"
+                        Height="24"
+                        FontSize="12"
                         Background="#95A5A6"
                         Foreground="White"
                         BorderThickness="0"
                         Cursor="Hand"/>
-            </StackPanel>
-        </GroupBox>
-
-        <!-- Log Output -->
-        <GroupBox Grid.Row="6" Header="Activity Log" Padding="10">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <TextBlock x:Name="LogTextBlock"
-                           FontFamily="Consolas"
-                           FontSize="12"
-                           TextWrapping="Wrap"
-                           Background="White"
-                           Padding="10"/>
-            </ScrollViewer>
-        </GroupBox>
-
-        <!-- Status Bar -->
-        <StatusBar Grid.Row="7" Height="30" Margin="0,10,0,0">
-            <StatusBarItem>
-                <TextBlock x:Name="StatusTextBlock" Text="Ready" FontSize="12"/>
             </StatusBarItem>
         </StatusBar>
     </Grid>

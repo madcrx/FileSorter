@@ -4,12 +4,20 @@ A Windows desktop application that automatically organizes media files (TV shows
 
 ## Features
 
-### File Organization
+### Interface
+- **Tabbed Interface**: Separate tabs for TV Shows and Movies for organized workflow
+- **User-Friendly Design**: Clean, modern WPF interface with activity logging
+- **Real-time Logging**: See exactly what's happening as operations proceed
+- **Safe Operations**: Confirmation dialogs and duplicate file handling
+
+### TV Shows Tab
+
+#### File Organization
 - **Automatic File Organization**: Moves files matching the pattern `xxx.xxx.xxx.S0...*` into folders named `xxx xxx xxx`
 - **Smart Folder Creation**: Automatically creates folders if they don't exist
 - **Preview Mode**: Preview what changes will be made before executing them
 
-### Folder Merging
+#### Folder Merging
 - **Smart Folder Merging**: Automatically detects and merges similar folders
 - **Intelligent Matching**: Handles variations like:
   - Folders with/without years (e.g., "Show Name 2023" + "Show Name")
@@ -18,14 +26,14 @@ A Windows desktop application that automatically organizes media files (TV shows
 - **Safe Merging**: Preview merges before executing, with confirmation dialogs
 - **Duplicate Protection**: Won't overwrite existing files during merge
 
-### File Renaming
+#### File Renaming
 - **Clean File Names**: Automatically cleans up messy file names in all subdirectories
 - **Removes Clutter**: Removes years, extra punctuation, and text after episode numbers
 - **Consistent Format**: Creates clean names like "Show Name S01E01.mkv"
 - **Bulk Processing**: Processes all files in all folders at once
 - **Safe Renaming**: Preview changes before executing, skips files that already exist
 
-### Season Folder Organization
+#### Season Folder Organization
 - **Automatic Season Folders**: Organizes files into Season folders within each show directory
 - **Smart Folder Creation**: Creates "Season 1", "Season 2", etc. folders automatically
 - **Leading Zero Removal**: Renames "Season 01" to "Season 1" for consistency
@@ -33,24 +41,44 @@ A Windows desktop application that automatically organizes media files (TV shows
 - **Bulk Organization**: Processes all shows and all seasons at once
 - **Safe Operations**: Preview mode and duplicate detection
 
-### General
-- **User-Friendly Interface**: Clean, modern WPF interface with activity logging
-- **Safe Operations**: Confirmation dialogs and duplicate file handling
-- **Real-time Logging**: See exactly what's happening as operations proceed
+### Movies Tab
 
-## File Pattern
+#### Movie File Cleaning
+- **Automatic Movie Cleanup**: Simplifies messy movie file names
+- **Year Preservation**: Keeps the movie year while removing clutter
+- **Removes Extra Text**: Removes resolution, release info, and other extra text after the year
+- **Clean Format**: Creates files in format "Movie Title YEAR.ext"
+- **Preview Mode**: See changes before executing
+- **Safe Operations**: Preview mode and duplicate detection
 
-The application recognizes files in the format:
+## File Patterns
+
+### TV Shows
+The application recognizes TV show files in the format:
 - **File Format**: `Show.Name.Here.S01E01.mkv` (dots separating words, season indicator)
 - **Folder Format**: `Show Name Here` (spaces separating words)
 
-### Examples
+#### TV Show Examples
 
 | Original File | Destination Folder |
 |---------------|-------------------|
 | `Breaking.Bad.S01E01.mkv` | `Breaking Bad/` |
 | `The.Office.S03E12.mp4` | `The Office/` |
 | `Game.Of.Thrones.S05E09.avi` | `Game Of Thrones/` |
+
+### Movies
+The application recognizes movie files with years and cleans them:
+- **Input Format**: `Movie.Title.2021.1080p.WEB.mkv` (dots separating words, year, extra info)
+- **Output Format**: `Movie Title 2021.mkv` (clean title with year)
+
+#### Movie Cleaning Examples
+
+| Before Cleaning | After Cleaning |
+|-----------------|----------------|
+| `The.Matrix.1999.1080p.BluRay.x264.mkv` | `The Matrix 1999.mkv` |
+| `Inception.2010.720p.WEB-DL.AAC2.0.H.264.mp4` | `Inception 2010.mp4` |
+| `Interstellar-2014-2160p-4K-HDR.mkv` | `Interstellar 2014.mkv` |
+| `Avatar_The_Way_of_Water_2022_IMAX.avi` | `Avatar The Way of Water 2022.avi` |
 
 ## Requirements
 
@@ -222,6 +250,30 @@ After cleaning file names, you can organize files into season-specific subfolder
    - Format: "Show Name/Season 1/Show Name S01E01.mkv"
    - Leading zeros removed from folder names (Season 01 → Season 1)
 
+### Cleaning Movie Files
+
+For movie files, switch to the Movies tab to clean up file names:
+
+1. **Switch to Movies Tab**: Click the "Movies" tab at the top
+
+2. **Select Directory**: Use the directory selection to choose the folder with movie files
+
+3. **Preview Cleaning** (Recommended):
+   - Click "Preview Cleaning" to see how files will be renamed
+   - Review the before/after file names
+   - Verify the year is preserved and extra text is removed
+
+4. **Clean Movie Files**:
+   - Click "Clean Movie Files"
+   - Review the confirmation dialog
+   - Confirm to proceed with renaming
+   - Watch the activity log as files are renamed
+
+5. **Review Results**:
+   - Files now have clean names with the year preserved
+   - Format: "Movie Title YEAR.ext"
+   - All extra text (resolution, release info, etc.) removed
+
 ## How It Works
 
 ### File Organization
@@ -329,27 +381,42 @@ Show Name/
 
 ## Interface Guide
 
-### File Organization Section
-- **Directory Selection**: Text box and browse button to select the target directory
+### Main Interface
+- **Directory Selection**: Text box and browse button to select the target directory (shared between tabs)
+- **TV Shows Tab**: Contains all TV show organization features
+- **Movies Tab**: Contains movie file cleaning features
+- **Status Bar**: Displays current operation status (shared between tabs)
+- **Clear Log**: Clears the activity log in the current tab
+
+### TV Shows Tab
+
+#### File Organization Section
 - **Organize Files**: Execute the file organization (shows confirmation dialog)
 - **Preview Changes**: See what file moves will happen without making changes
 
-### Folder Merging Section
+#### Folder Merging Section
 - **Merge Similar Folders**: Execute folder merging (shows confirmation dialog)
 - **Preview Merges**: See what folders will be merged without making changes
 
-### File Renaming Section
+#### File Renaming Section
 - **Clean File Names**: Execute file name cleaning (shows confirmation dialog)
 - **Preview Cleaning**: See how files will be renamed without making changes
 
-### Season Folder Organization Section
+#### Season Folder Organization Section
 - **Organize into Seasons**: Execute season folder organization (shows confirmation dialog)
 - **Preview Seasons**: See how files will be organized into season folders
 
-### General
-- **Clear Log**: Clear the activity log
-- **Activity Log**: Shows real-time progress and results
-- **Status Bar**: Displays current operation status
+#### Activity Log
+- Shows real-time progress and results for TV show operations
+
+### Movies Tab
+
+#### Movie File Cleaning Section
+- **Clean Movie Files**: Execute movie file name cleaning (shows confirmation dialog)
+- **Preview Cleaning**: See how movie files will be renamed without making changes
+
+#### Activity Log
+- Shows real-time progress and results for movie operations
 
 ## Safety Features
 
@@ -417,23 +484,38 @@ Show Name/
 2. Download `FileSorter.exe` or build from source
 3. Double-click `FileSorter.exe` to launch
 4. Click "Browse..." and select your downloads folder
+
+**For TV Shows (TV Shows tab):**
+
 5. Click "Preview Changes" to see what will happen
-6. Click "Organize Files" to sort your media files
+6. Click "Organize Files" to sort your TV show files
 7. (Optional) Click "Preview Merges" to check for similar folders
 8. (Optional) Click "Merge Similar Folders" to combine duplicate folders
 9. (Optional) Click "Preview Cleaning" to see file name changes
 10. (Optional) Click "Clean File Names" to remove clutter from file names
 11. (Optional) Click "Preview Seasons" to see season folder organization
 12. (Optional) Click "Organize into Seasons" to sort files into season folders
-13. Done! Your files are now perfectly organized
+
+**For Movies (Movies tab):**
+
+5. Switch to the "Movies" tab
+6. Click "Preview Cleaning" to see how movie files will be renamed
+7. Click "Clean Movie Files" to simplify movie file names
+
+**Done!** Your files are now perfectly organized
 
 ### Typical Workflow
 
+#### TV Shows (TV Shows Tab)
 1. **Step 1 - Organize**: Organize files into folders based on show names
 2. **Step 2 - Merge**: Merge any similar folders that were created (e.g., "Show Name" and "Show Name 2023")
 3. **Step 3 - Clean**: Clean file names to remove years, extra text, and punctuation
 4. **Step 4 - Seasons**: Organize files into season folders (Season 1, Season 2, etc.)
 5. **Result**: Clean, organized directory with consistent file names, no duplicate folders, and organized seasons
+
+#### Movies (Movies Tab)
+1. **Step 1 - Clean**: Clean movie file names to remove resolution, release info, and other clutter
+2. **Result**: Clean movie files in format "Movie Title YEAR.ext"
 
 ### Example Complete Workflow
 
@@ -481,6 +563,31 @@ Downloads/
 │       ├── Show Name S01E02.mkv
 │       └── Show Name S01E03.mkv
 ```
+
+### Movie File Cleaning
+
+1. **Year Detection**: The app searches for a 4-digit year (1900-2099) in the filename
+
+2. **Title Extraction**: Extracts everything before the year as the movie title
+
+3. **Name Cleaning**:
+   - Replaces dots, dashes, underscores with spaces
+   - Removes multiple spaces
+   - Trims whitespace
+
+4. **Format Output**: Creates clean file name: "Movie Title YEAR.ext"
+
+5. **Fallback Handling**: If no year is found, still cleans up punctuation
+
+### Movie Cleaning Examples
+
+| Before | After |
+|--------|-------|
+| `The.Matrix.1999.1080p.BluRay.x264.mkv` | `The Matrix 1999.mkv` |
+| `Inception.2010.720p.WEB-DL.AAC2.0.H.264.mp4` | `Inception 2010.mp4` |
+| `Interstellar-2014-2160p-4K-HDR.mkv` | `Interstellar 2014.mkv` |
+| `Avatar_The_Way_of_Water_2022_IMAX.avi` | `Avatar The Way of Water 2022.avi` |
+| `The_Dark_Knight.mkv` | `The Dark Knight.mkv` (no year found, basic cleanup) |
 
 ## License
 
